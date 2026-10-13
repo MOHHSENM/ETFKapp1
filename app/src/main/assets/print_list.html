@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+          font-family: Tahoma, Arial, sans-serif;
+          direction: rtl;
+          margin: 15px;
+          font-size: 11px;
+        }
+        .header {
+          background: #1a237e;
+          color: #fff;
+          padding: 10px;
+          text-align: center;
+          border-radius: 6px;
+          margin-bottom: 10px;
+        }
+        .header h1 { margin: 0; font-size: 16px; }
+        .header p { margin: 4px 0 0; font-size: 11px; }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 8px;
+          font-size: 10px;
+        }
+        th, td {
+          border: 1px solid #999;
+          padding: 4px;
+          text-align: center;
+        }
+        th { background: #e0e0e0; font-size: 10px; }
+        .total-row {
+          background: #fff3e0;
+          font-weight: bold;
+          font-size: 12px;
+        }
+        .footer {
+          margin-top: 15px;
+          text-align: center;
+          color: #666;
+          font-size: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>لیست فاکتورهای اقساطی</h1>
+    <p id="subtitle"></p>
+</div>
+
+<table>
+    <thead>
+    <tr>
+        <th>ردیف</th>
+        <th>کد</th>
+        <th>تاریخ</th>
+        <th>شرح</th>
+        <th>مبلغ</th>
+        <th>اقساط</th>
+        <th>خریدار</th>
+        <th>وضعیت</th>
+    </tr>
+    </thead>
+    <tbody id="rows"></tbody>
+    <tr class="total-row">
+        <td colspan="4">جمع کل</td>
+        <td id="totalAmount"></td>
+        <td colspan="3"></td>
+    </tr>
+</table>
+
+<div class="footer">
+    تاریخ چاپ: <span id="printDate"></span>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">سامانه etfk</string>
+    <string name="title">ورود به سامانه</string>
+    <string name="subtitle">لطفاً اطلاعات حساب کاربری خود را وارد کنید</string>
+    <string name="hint_national_id">کد ملی / نام کاربری</string>
+    <string name="hint_password">رمز عبور</string>
+    <string name="btn_login">ورود</string>
+    <string name="err_empty">کد ملی و رمز عبور را وارد کنید</string>
+    <string name="err_network">اتصال به اینترنت برقرار نیست</string>
+    <string name="err_server">اطلاعات ورود صحیح نیست</string>
+    <string name="logging_in">در حال ورود…</string>
+</resources>

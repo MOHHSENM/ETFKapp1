@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        * { box-sizing: border-box; }
+        body {
+          font-family: Tahoma, Arial, sans-serif;
+          direction: rtl;
+          margin: 15px;
+          color: #000;
+          font-size: 13px;
+        }
+        .header {
+          background: #1a237e;
+          color: #fff;
+          padding: 12px;
+          text-align: center;
+          border-radius: 8px;
+          margin-bottom: 12px;
+        }
+        .header h1 { margin: 0; font-size: 18px; }
+        .header p { margin: 4px 0 0; font-size: 12px; }
+        .info-row {
+          display: flex;
+          justify-content: space-between;
+          padding: 5px 0;
+          border-bottom: 1px dashed #ccc;
+        }
+        .info-row .label { color: #555; }
+        .info-row .value { font-weight: bold; color: #1a237e; }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 10px;
+          font-size: 12px;
+        }
+        th, td {
+          border: 1px solid #999;
+          padding: 5px;
+          text-align: center;
+        }
+        th { background: #e0e0e0; }
+        .total-row { background: #f5f5f5; font-weight: bold; }
+        .section-title {
+          font-weight: bold;
+          color: #1a237e;
+          margin: 12px 0 6px;
+          font-size: 14px;
+          border-bottom: 2px solid #1a237e;
+          padding-bottom: 4px;
+        }
+        .signature {
+          margin-top: 30px;
+          display: flex;
+          justify-content: space-around;
+          font-weight: bold;
+        }
+        .signature div { text-align: center; }
+        .signature .line {
+          margin-top: 40px;
+          border-top: 1px solid #000;
+          width: 120px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1 id="shopName">فروشگاه</h1>
+    <p id="shopPhone"></p>
+</div>
+
+<div class="section-title">اطلاعات فاکتور</div>
+
+<div class="info-row"><span class="label">کد رهگیری:</span><span class="value" id="trackingCode"></span></div>
+<div class="info-row"><span class="label">تاریخ و ساعت:</span><span class="value" id="date"></span></div>
+<div class="info-row"><span class="label">شماره فاکتور:</span><span class="value" id="factorId"></span></div>
+
+<div class="section-title">اطلاعات خریدار</div>
+
+<div class="info-row"><span class="label">نام خریدار:</span><span class="value" id="buyerName"></span></div>
+<div class="info-row"><span class="label">کد پرسنلی:</span><span class="value" id="personalCode"></span></div>
+
+<div class="section-title">اقلام فاکتور</div>
+
+<table>
+    <thead>
+    <tr>
+        <th>ردیف</th>
+        <th>شرح کالا</th>
+        <th>مبلغ (ریال)</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+        <td>۱</td>
+        <td id="description"></td>
+        <td id="totalAmount"></td>
+    </tr>
+    <tr class="total-row">
+        <td colspan="2">جمع کل</td>
+        <td id="totalAmount2"></td>
+    </tr>
+    </tbody>
+</table>
+
+<div class="section-title">اطلاعات پرداخت</div>
+
+<div class="info-row"><span class="label">پیش پرداخت:</span><span class="value" id="prepayment"></span></div>
+<div class="info-row"><span class="label">تعداد اقساط:</span><span class="value" id="installments"></span></div>
+<div class="info-row"><span class="label">وضعیت فاکتور:</span><span class="value" id="status"></span></div>
+
+<div class="signature">
+    <div>
+        <div>امضای خریدار</div>
+        <div class="line"></div>
+    </div>
+    <div>
+        <div>امضای فروشنده</div>
+        <div class="line"></div>
+    </div>
+</div>
+
+</body>
+</html>
