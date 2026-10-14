@@ -12,7 +12,6 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- هدر آبی -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -32,7 +31,6 @@
                 android:textStyle="bold"/>
         </LinearLayout>
 
-        <!-- نوار منو -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -59,14 +57,12 @@
                 android:paddingHorizontal="10dp"/>
         </LinearLayout>
 
-        <!-- بدنه -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- کارت اطلاعات -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -80,7 +76,6 @@
                     android:orientation="vertical"
                     android:padding="16dp">
 
-                    <!-- کد فروشگاه -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -109,7 +104,6 @@
                             android:textStyle="bold"/>
                     </LinearLayout>
 
-                    <!-- نام مدیر فروشگاه -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -138,7 +132,6 @@
                             android:textStyle="bold"/>
                     </LinearLayout>
 
-                    <!-- نام فروشگاه -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -167,7 +160,6 @@
                             android:textStyle="bold"/>
                     </LinearLayout>
 
-                    <!-- مانده اعتبار -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -206,7 +198,6 @@
                 android:layout_marginTop="12dp"
                 android:visibility="gone"/>
 
-            <!-- دکمه‌ها -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnChangePassword"
                 android:layout_width="match_parent"
@@ -254,25 +245,42 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnNewInvoice"
                 android:layout_width="match_parent"
-                android:layout_height="62dp"
+                android:layout_height="52dp"
                 android:layout_marginTop="10dp"
-                android:layout_marginBottom="20dp"
                 android:text="ثبت فاکتور جدید"
-                android:textColor="#FFFFFF"
-                android:textSize="20sp"
+                android:textSize="15sp"
+                app:cornerRadius="10dp"
                 app:backgroundTint="#1A237E"
-                app:cornerRadius="10dp" />
+                android:textColor="#FFFFFF"/>
 
+            <!-- ⚡ دکمه درباره ما -->
+            <TextView
+                android:id="@+id/txtAbout"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="16dp"
+                android:text="درباره ما"
+                android:textColor="#1A237E"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:padding="8dp"
+                android:background="?android:attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"/>
+
+            <!-- نسخه -->
             <TextView
                 android:id="@+id/txtVersion"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
+                android:layout_marginTop="6dp"
                 android:layout_marginBottom="20dp"
                 android:text=""
                 android:textSize="12sp"
                 android:textColor="@color/muted"
                 android:gravity="center"/>
+
         </LinearLayout>
     </LinearLayout>
 </ScrollView>

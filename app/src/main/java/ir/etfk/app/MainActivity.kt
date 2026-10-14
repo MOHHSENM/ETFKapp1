@@ -47,6 +47,22 @@ class MainActivity : BaseActivity() {
         binding.btnReturnInvoice.setOnClickListener {
             startActivity(Intent(this@MainActivity, ReturnInvoiceActivity::class.java))
         }
+
+        // ⚡ دکمه درباره ما
+        binding.txtAbout.setOnClickListener {
+            android.app.AlertDialog.Builder(this@MainActivity)
+                .setTitle("درباره ما")
+                .setMessage(
+                    "سامانه اقساط\n" +
+                            "نسخه ${BuildConfig.VERSION_NAME}\n\n" +
+                            "اپلیکیشن مدیریت فاکتورهای اقساطی\n" +
+                            "سامانه etfk.ir\n\n" +
+                            "☎️ تلفن تماس:\n" +
+                            "08337216020"
+                )
+                .setPositiveButton("باشه", null)
+                .show()
+        }
     }
 
     private fun loadDashboard() {

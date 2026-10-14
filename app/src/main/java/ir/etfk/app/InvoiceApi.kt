@@ -314,7 +314,9 @@ class InvoiceApi(private val session: SessionManager) {
         shopInvoice: String, meli: String, shoghl: String, status: String
     ): Result<List<InvoiceRow>> = runCatching {
         val doc = Jsoup.parse(currentHtml)
+
         val form = buildForm(doc,
+            "ctl00${D}ContentPlaceHolder1${D}filter_n" to (doc.getElementById("ContentPlaceHolder1_filter_n")?.attr("value").orEmpty()),
             "ctl00${D}ContentPlaceHolder1${D}ed_start" to start,
             "ctl00${D}ContentPlaceHolder1${D}ed_end" to end,
             "ctl00${D}ContentPlaceHolder1${D}ed_id" to factorCode,
@@ -328,11 +330,22 @@ class InvoiceApi(private val session: SessionManager) {
             "ctl00${D}ContentPlaceHolder1${D}ed_surename" to "",
             "ctl00${D}ContentPlaceHolder1${D}ed_shoghl" to shoghl,
             "ctl00${D}ContentPlaceHolder1${D}dp_status" to status,
-            "ctl00${D}ContentPlaceHolder1${D}filter_n" to "",
             "ctl00${D}ContentPlaceHolder1${D}ImageButton1.x" to "10",
             "ctl00${D}ContentPlaceHolder1${D}ImageButton1.y" to "10"
         )
         postAndFollow(currentUrl, form)
+
+        // ⚡ چک کنیم که آیا سرور فیلتر مشتری رو اعمال کرده یا نه
+        val responseDoc = Jsoup.parse(currentHtml)
+        val responseFilter = responseDoc.getElementById("ContentPlaceHolder1_filter_n")?.attr("value").orEmpty()
+        val hasCustomerFilter = responseFilter.contains("customer_id", ignoreCase = true)
+
+        // اگه کاربر کد ملی یا پرسنلی وارد کرده ولی سرور customer_id رو اعمال نکرده
+        // یعنی کد نامعتبره → لیست خالی برگردون
+        if ((meli.isNotEmpty() || shoghl.isNotEmpty()) && !hasCustomerFilter) {
+            return@runCatching emptyList()
+        }
+
         parseInvoiceRows()
     }
 
