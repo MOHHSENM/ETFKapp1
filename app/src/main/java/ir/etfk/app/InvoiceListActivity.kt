@@ -83,6 +83,8 @@ class InvoiceListActivity : BaseActivity() {
             onReturn = { row ->
                 val intent = android.content.Intent(this, ReturnInvoiceActivity::class.java)
                 intent.putExtra("factor_code", row.id)
+                intent.putExtra("personel_code", row.personel)
+                // کد ملی دیگه پاس داده نمیشه
                 startActivity(intent)
             }
         )

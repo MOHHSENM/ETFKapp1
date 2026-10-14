@@ -21,8 +21,11 @@ class ChangePasswordActivity : BaseActivity() {
         lifecycleScope.launch {
             val r = withContext(Dispatchers.IO) { api.openChangePassword() }
             showProgress(false)
-            r.onSuccess { bindForm() }
-                .onFailure { showError(it.message ?: "خطا در باز کردن فرم") }
+            r.onSuccess {
+                bindForm()
+            }.onFailure { e ->
+                showError(e.message ?: "خطا در باز کردن فرم")
+            }
         }
     }
 
@@ -56,7 +59,9 @@ class ChangePasswordActivity : BaseActivity() {
                     if (msg.contains("موفق")) {
                         finish()
                     }
-                }.onFailure { showError(it.message ?: "خطا در تغییر رمز") }
+                }.onFailure { e ->
+                    showError(e.message ?: "خطا در تغییر رمز")
+                }
             }
         }
     }

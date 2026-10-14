@@ -45,10 +45,8 @@ class InvoiceApi(private val session: SessionManager) {
         postAndFollow(currentUrl, form)
         val d = Jsoup.parse(currentHtml)
 
-        // ⚡ پیام خطای سرور (هر پیامی که توی این span باشه)
         val errMsg = d.getElementById("ContentPlaceHolder1_l_user_error")?.text()?.trim().orEmpty()
 
-        // حالت ۱: کاربر فاکتور موقت داره
         if (errMsg.contains("فاکتور موقت")) {
             val code = Regex("([a-z][a-z0-9]{5,10})\\s+می").find(errMsg)?.groupValues?.getOrNull(1)
                 ?: Regex("رهگیری\\s+([a-zA-Z0-9]+)").find(errMsg)?.groupValues?.getOrNull(1)
@@ -60,12 +58,10 @@ class InvoiceApi(private val session: SessionManager) {
             )
         }
 
-        // حالت ۲: هر پیام خطای دیگه‌ای از سرور
         if (errMsg.isNotBlank()) {
             throw Exception(errMsg)
         }
 
-        // حالت ۳: همه چیز اوکی بود
         val name = d.getElementById("ContentPlaceHolder1_l_name")?.text().orEmpty()
         if (name.isBlank()) {
             throw Exception("مشتری با این مشخصات یافت نشد")
@@ -85,7 +81,7 @@ class InvoiceApi(private val session: SessionManager) {
     }
 
     // ====== پیگیری فاکتور موقت ======
-    fun followTempInvoice(meli: String, personel: String, code: String): Result<Unit> = runCatching {
+    fun followTempInvoice(meli: String, personel: String, code: String): Result<TempInvoiceData> = runCatching {
         val doc = Jsoup.parse(currentHtml)
         val b = FormBody.Builder()
         b.add("__EVENTTARGET", "ctl00${D}ContentPlaceHolder1${D}LinkButton1")
@@ -100,21 +96,58 @@ class InvoiceApi(private val session: SessionManager) {
         b.add("ctl00${D}ContentPlaceHolder1${D}ed_meli", meli)
         b.add("ctl00${D}ContentPlaceHolder1${D}ed_personel", personel)
 
-        // ⚡ POST به URL جدید (sms_inv_item.aspx?id=code)
         val postUrl = "$baseUrl/trusting_sms/sms_inv_item.aspx?id=$code"
         postAndFollow(postUrl, b.build())
 
-        // اگه فاکتور مربوط به فروشگاه دیگه‌ست
-        if (currentHtml.contains("فاکتور مربوط به این فروشگاه")) {
-            throw Exception("این فاکتور مربوط به فروشگاه شما نمی‌باشد")
+        val responseDoc = Jsoup.parse(currentHtml)
+        val bodyText = responseDoc.body().text()
+
+        // ۱. اگر صفحه تایید باز شده باشد، اطلاعات را استخراج می‌کنیم
+        if (currentHtml.contains("ed_code") || currentHtml.contains("bt_without_sms")) {
+
+            val buyerName = responseDoc.getElementById("ContentPlaceHolder1_l_name_kharidar")?.text()?.trim().orEmpty()
+            val ghest = responseDoc.getElementById("ContentPlaceHolder1_ed_ghest")?.attr("value")?.trim().orEmpty()
+
+            var totalAmount = "0"
+            val rows = responseDoc.select("table[id=ContentPlaceHolder1_GridView1] tr")
+            for (row in rows) {
+                val cells = row.select("td")
+                if (cells.size >= 8 && cells[5].text().trim() == "جمع") {
+                    totalAmount = cells[7].text().trim()
+                }
+            }
+
+            return@runCatching TempInvoiceData(
+                buyerName = buyerName.ifBlank { "نامشخص" },
+                amount = totalAmount,
+                installments = ghest.ifBlank { "0" }
+            )
         }
 
-        // اگه صفحه تایید نیومد
-        if (!currentHtml.contains("ed_code") && !currentHtml.contains("bt_without_sms")) {
-            val page = currentUrl.substringAfterLast("/").substringBefore("?")
-            throw Exception("صفحه تایید فاکتور موقت باز نشد. صفحه: $page")
+        // ۲. بررسی خطاها
+        if (bodyText.contains("زمان تایید سپری شده") || bodyText.contains("زمان سپری شده")) {
+            throw Exception("زمان تایید سپری شده است.\n\nلطفاً از بخش «لیست فاکتورها» نسبت به برگشت فاکتور اقدام نمایید.")
         }
+
+        if (bodyText.contains("وضعیت مناسبی جهت انصراف نمی باشد") || bodyText.contains("در وضعیت مناسبی جهت انصراف")) {
+            throw Exception("این فاکتور در وضعیت مناسبی جهت انصراف نمی باشد.\n\nلطفاً از بخش «لیست فاکتورها» نسبت به برگشت فاکتور اقدام نمایید.")
+        }
+
+        if (bodyText.contains("فاکتور مربوط به این فروشگاه")) {
+            throw Exception("این فاکتور مربوط به فروشگاه شما نمی‌باشد.")
+        }
+
+        val redError = responseDoc.selectFirst("span[style*=color:Red]")?.text()?.trim()
+            ?: responseDoc.selectFirst("font[color=Red]")?.text()?.trim()
+            ?: responseDoc.selectFirst("[style*=color:red]")?.text()?.trim()
+
+        if (!redError.isNullOrBlank()) {
+            throw Exception("$redError\n\nلطفاً از بخش «لیست فاکتورها» نسبت به برگشت فاکتور اقدام نمایید.")
+        }
+
+        throw Exception("امکان مشاهده این فاکتور وجود ندارد. احتمالاً منقضی شده یا حذف شده است.\n\nلطفاً از بخش «لیست فاکتورها» نسبت به برگشت فاکتور اقدام نمایید.")
     }
+
     fun confirmCustomer(meli: String, personel: String): Result<Unit> = runCatching {
         val doc = Jsoup.parse(currentHtml)
         val form = buildForm(doc,
@@ -145,16 +178,13 @@ class InvoiceApi(private val session: SessionManager) {
         )
         postAndFollow(currentUrl, form)
 
-        // ⚡ چک خطای سقف فروشگاه
         val d = Jsoup.parse(currentHtml)
         val errMsg = d.getElementById("ContentPlaceHolder1_l_err_faktor")?.text()?.trim().orEmpty()
         if (errMsg.isNotBlank()) {
             throw Exception(errMsg)
         }
 
-        // چک: اگه برگشت به صفحه ثبت موقت، یعنی خطایی رخ داده
         if (currentUrl.contains("sms_invoice", ignoreCase = true)) {
-            // اگه هنوز توی صفحه ثبت موقتیم و خطا نداریم، یه چیزی غیرعادی رخ داده
             val anyErr = d.selectFirst("span[style*=color:Red]")?.text()?.trim().orEmpty()
             if (anyErr.isNotBlank()) {
                 throw Exception(anyErr)
@@ -189,7 +219,6 @@ class InvoiceApi(private val session: SessionManager) {
         )
         postAndFollow(currentUrl, form)
 
-        // بعد از POST، اگه به print_page نرسیدیم، دستی می‌ریم
         if (!currentUrl.contains("print_page", ignoreCase = true) && id.isNotEmpty()) {
             load("$baseUrl/trusting_sms/print_page.aspx?id=$id")
         }
@@ -265,7 +294,7 @@ class InvoiceApi(private val session: SessionManager) {
         val req = Request.Builder().url(url).post(form)
             .header("User-Agent", ua)
             .header("Accept-Language", "fa-IR,fa;q=0.9")
-            .header("Referer", url)
+            .header("Referer", currentUrl)
             .build()
         client.newCall(req).execute().use { resp ->
             currentUrl = resp.request.url.toString()
@@ -282,7 +311,6 @@ class InvoiceApi(private val session: SessionManager) {
         b.add("__SCROLLPOSITIONX", "0")
         b.add("__SCROLLPOSITIONY", "0")
 
-        // فقط اگه توی صفحه وجود داشت
         val vse = doc.selectFirst("input[name=__VIEWSTATEENCRYPTED]")
         if (vse != null) {
             b.add("__VIEWSTATEENCRYPTED", vse.attr("value"))
@@ -292,7 +320,7 @@ class InvoiceApi(private val session: SessionManager) {
         for ((k, v) in fields) b.add(k, v)
         return b.build()
     }
-    // ====== باز کردن لیست فاکتورها ======
+
     fun openInvoiceList(): Result<Unit> = runCatching {
         load("$baseUrl/trusting_sms/froshgah_first.aspx")
         val doc = Jsoup.parse(currentHtml)
@@ -301,14 +329,12 @@ class InvoiceApi(private val session: SessionManager) {
         )
         postAndFollow(currentUrl, form)
 
-        // ⚡ چک می‌کنیم فقط که توی صفحه invoice_list باشیم (نه اینکه جدول خالی نباشه)
         if (!currentUrl.contains("invoice_list", ignoreCase = true)) {
             val page = currentUrl.substringAfterLast("/").substringBefore("?")
             throw Exception("صفحه لیست باز نشد. صفحه: $page")
         }
     }
 
-    // ====== جستجوی فاکتورها ======
     fun searchInvoices(
         start: String, end: String, factorCode: String,
         shopInvoice: String, meli: String, shoghl: String, status: String
@@ -335,13 +361,10 @@ class InvoiceApi(private val session: SessionManager) {
         )
         postAndFollow(currentUrl, form)
 
-        // ⚡ چک کنیم که آیا سرور فیلتر مشتری رو اعمال کرده یا نه
         val responseDoc = Jsoup.parse(currentHtml)
         val responseFilter = responseDoc.getElementById("ContentPlaceHolder1_filter_n")?.attr("value").orEmpty()
         val hasCustomerFilter = responseFilter.contains("customer_id", ignoreCase = true)
 
-        // اگه کاربر کد ملی یا پرسنلی وارد کرده ولی سرور customer_id رو اعمال نکرده
-        // یعنی کد نامعتبره → لیست خالی برگردون
         if ((meli.isNotEmpty() || shoghl.isNotEmpty()) && !hasCustomerFilter) {
             return@runCatching emptyList()
         }
@@ -349,7 +372,6 @@ class InvoiceApi(private val session: SessionManager) {
         parseInvoiceRows()
     }
 
-    // ====== پارس جدول فاکتورها ======
     private fun parseInvoiceRows(): List<InvoiceRow> {
         val d = Jsoup.parse(currentHtml)
         val table = d.getElementById("ContentPlaceHolder1_GridView1") ?: return emptyList()
@@ -382,7 +404,7 @@ class InvoiceApi(private val session: SessionManager) {
         }
         return rows
     }
-    // ====== باز کردن فرم برگشت فاکتور ======
+
     fun openReturnForm(): Result<Unit> = runCatching {
         load("$baseUrl/trusting_sms/froshgah_first.aspx")
         val doc = Jsoup.parse(currentHtml)
@@ -397,7 +419,6 @@ class InvoiceApi(private val session: SessionManager) {
         }
     }
 
-    // ====== بررسی فاکتور برای برگشت ======
     fun checkReturnInvoice(meli: String, personel: String, faktor: String): Result<ReturnInvoiceInfo> = runCatching {
         val doc = Jsoup.parse(currentHtml)
         val form = buildForm(doc,
@@ -423,7 +444,6 @@ class InvoiceApi(private val session: SessionManager) {
         )
     }
 
-    // ====== ثبت برگشت فاکتور ======
     fun submitReturn(meli: String, personel: String, faktor: String): Result<String> = runCatching {
         val doc = Jsoup.parse(currentHtml)
         val form = buildForm(doc,
@@ -438,7 +458,7 @@ class InvoiceApi(private val session: SessionManager) {
         val err = d.selectFirst("span[style*=color:Red]")?.text().orEmpty()
         if (err.isNotBlank()) err else "فاکتور با موفقیت برگشت داده شد"
     }
-    // ====== باز کردن فرم تغییر رمز ======
+
     fun openChangePassword(): Result<Unit> = runCatching {
         load("$baseUrl/trusting_sms/froshgah_first.aspx")
         val doc = Jsoup.parse(currentHtml)
@@ -453,7 +473,6 @@ class InvoiceApi(private val session: SessionManager) {
         }
     }
 
-    // ====== ثبت تغییر رمز ======
     fun submitPasswordChange(oldPass: String, newPass: String, confirmPass: String): Result<String> = runCatching {
         val doc = Jsoup.parse(currentHtml)
         val form = buildForm(doc,
@@ -465,14 +484,12 @@ class InvoiceApi(private val session: SessionManager) {
         postAndFollow(currentUrl, form)
 
         val d = Jsoup.parse(currentHtml)
-        // خطا: معمولاً توی span قرمز رنگ
         val errMsg = d.selectFirst("span[style*=color:Red]")?.text()?.trim().orEmpty()
         if (errMsg.isNotBlank()) {
             errMsg
         } else if (currentHtml.contains("رمز شما تغییر کرد")) {
             "رمز عبور با موفقیت تغییر کرد"
         } else {
-            // چک دیگه: اگه صفحه change باقی مونده، احتمالاً خطا
             if (currentUrl.contains("password_change")) {
                 "تغییر رمز انجام نشد. رمز قدیم را بررسی کنید."
             } else {
@@ -480,7 +497,7 @@ class InvoiceApi(private val session: SessionManager) {
             }
         }
     }
-    // ====== انصراف از فاکتور موقت ======
+
     fun cancelTempInvoice(): Result<Unit> = runCatching {
         val doc = Jsoup.parse(currentHtml)
         val form = buildForm(doc,
@@ -488,10 +505,10 @@ class InvoiceApi(private val session: SessionManager) {
         )
         postAndFollow(currentUrl, form)
     }
-    // ====== لغو فاکتور موقت از لیست (با کلیک روی آیکون ضربدر) ======
+
     fun cancelInvoiceAt(rowIndex: Int): Result<Unit> = runCatching {
         val doc = Jsoup.parse(currentHtml)
-        val ctl = String.format("ctl%02d", rowIndex + 2)   // 0 → ctl02
+        val ctl = String.format("ctl%02d", rowIndex + 2)
 
         val filterN = doc.getElementById("ContentPlaceHolder1_filter_n")?.attr("value").orEmpty()
         val edStart = doc.getElementById("ContentPlaceHolder1_ed_start")?.attr("value").orEmpty()
@@ -514,11 +531,8 @@ class InvoiceApi(private val session: SessionManager) {
             "ctl00${D}ContentPlaceHolder1${D}GridView1${D}$ctl${D}cancelBT.y" to "9"
         )
         postAndFollow(currentUrl, form)
-
-        // بعد از لغو، لیست رو دوباره لود کن
-        // سرور دوباره همین صفحه رو برمی‌گردونه
     }
-    // ====== خوندن گزینه‌های تعداد اقساط از صفحه ======
+
     fun getInstallmentOptions(): List<String> {
         return try {
             val doc = Jsoup.parse(currentHtml)
@@ -556,6 +570,7 @@ data class InvoiceResult(
     val totalAmount: String,
     val status: String
 )
+
 data class ReturnInvoiceInfo(
     val name: String,
     val family: String,
@@ -565,6 +580,7 @@ data class ReturnInvoiceInfo(
     val pish: String,
     val date: String
 )
+
 data class InvoiceRow(
     val rowNumber: String,
     val id: String,
@@ -581,4 +597,10 @@ data class InvoiceRow(
     val status: String,
     val date: String,
     val prepayment: String
+)
+
+data class TempInvoiceData(
+    val buyerName: String,
+    val amount: String,
+    val installments: String
 )

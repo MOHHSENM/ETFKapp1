@@ -116,8 +116,23 @@ class NewInvoiceActivity : BaseActivity() {
                         api.followTempInvoice(meliValue, personelValue, c.tempInvoiceCode)
                     }
                     showProgress(false)
-                    r.onSuccess { showStep4() }
-                        .onFailure { toast(it.message ?: "خطا در پیگیری فاکتور") }
+                    r.onSuccess { tempData ->
+                        // ⚡ مقداردهی متغیرها تا در مرحله ۴ نمایش داده شوند
+                        customerName = tempData.buyerName
+                        lastAmount = tempData.amount
+                        lastInstallments = tempData.installments
+                        showStep4()
+                    }.onFailure { e ->
+                        android.app.AlertDialog.Builder(this@NewInvoiceActivity)
+                            .setTitle("خطا در تایید فاکتور")
+                            .setMessage(e.message ?: "خطا در پیگیری فاکتور")
+                            .setPositiveButton("باشه", null)
+                            .setNeutralButton("برو به لیست فاکتورها") { _, _ ->
+                                startActivity(android.content.Intent(this@NewInvoiceActivity, InvoiceListActivity::class.java))
+                                finish()
+                            }
+                            .show()
+                    }
                 }
             }
             .setNegativeButton("انصراف", null)

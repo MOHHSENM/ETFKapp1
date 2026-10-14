@@ -14,12 +14,21 @@ class ReturnInvoiceActivity : BaseActivity() {
     private var meliValue = ""
     private var personelValue = ""
     private var faktorValue = ""
+
+    // متغیرهای پیش‌پر کردن
     private var prefilledFactorCode = ""
+    private var prefilledPersonel = ""
+    private var prefilledMeli = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         api = InvoiceApi(session)
+
+        // دریافت مقادیر از صفحه قبل
         prefilledFactorCode = intent.getStringExtra("factor_code") ?: ""
+        prefilledPersonel = intent.getStringExtra("personel_code") ?: ""
+        prefilledMeli = intent.getStringExtra("meli_code") ?: ""
+
         openForm()
     }
 
@@ -29,21 +38,34 @@ class ReturnInvoiceActivity : BaseActivity() {
         lifecycleScope.launch {
             val r = withContext(Dispatchers.IO) { api.openReturnForm() }
             showProgress(false)
-            r.onSuccess { bindStep1() }
-                .onFailure { toast(it.message ?: "خطا در باز کردن فرم"); finish() }
+            r.onSuccess {
+                bindStep1()
+            }.onFailure { e ->
+                toast(e.message ?: "خطا در باز کردن فرم")
+                finish()
+            }
         }
     }
 
     private fun bindStep1() {
-        // پر کردن خودکار کد فاکتور
+        val etMeli = findViewById<EditText>(R.id.etMeli)
+        val etPersonel = findViewById<EditText>(R.id.etPersonel)
+        val etFactorCode = findViewById<EditText>(R.id.etFactorCode)
+
+        // ⚡ پر کردن خودکار فیلدها (فقط کد پرسنلی و کد فاکتور)
         if (prefilledFactorCode.isNotEmpty()) {
-            findViewById<EditText>(R.id.etFactorCode).setText(prefilledFactorCode)
+            etFactorCode.setText(prefilledFactorCode)
         }
+        if (prefilledPersonel.isNotEmpty() && prefilledPersonel != "-") {
+            etPersonel.setText(prefilledPersonel)
+        }
+        // فیلد کد ملی خالی می‌مونه
+
         findViewById<Button>(R.id.btnCancel).setOnClickListener { finish() }
         findViewById<Button>(R.id.btnSubmit).setOnClickListener {
-            val meli = findViewById<EditText>(R.id.etMeli).text.toString().trim()
-            val personel = findViewById<EditText>(R.id.etPersonel).text.toString().trim()
-            val faktor = findViewById<EditText>(R.id.etFactorCode).text.toString().trim()
+            val meli = etMeli.text.toString().trim()
+            val personel = etPersonel.text.toString().trim()
+            val faktor = etFactorCode.text.toString().trim()
 
             hideError()
 
@@ -65,7 +87,7 @@ class ReturnInvoiceActivity : BaseActivity() {
                 }
                 showProgress(false)
                 r.onSuccess { info -> showStep2(info) }
-                    .onFailure { showError(it.message ?: "فاکتور پیدا نشد") }
+                    .onFailure { e -> showError(e.message ?: "فاکتور پیدا نشد") }
             }
         }
     }
@@ -100,8 +122,17 @@ class ReturnInvoiceActivity : BaseActivity() {
             showProgress(false)
             r.onSuccess { msg ->
                 toast(msg)
+
+                // ⚡ بازگشت مستقیم به صفحه اصلی (داشبورد)
+                val intent = android.content.Intent(this@ReturnInvoiceActivity, MainActivity::class.java)
+                // این فلگ‌ها باعث میشن صفحاتی که روی داشبورد باز بودن (مثل لیست فاکتورها) بسته بشن
+                intent.flags = android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP or android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP
+                startActivity(intent)
                 finish()
-            }.onFailure { showError(it.message ?: "خطا در برگشت فاکتور") }
+
+            }.onFailure { e ->
+                showError(e.message ?: "خطا در برگشت فاکتور")
+            }
         }
     }
 
